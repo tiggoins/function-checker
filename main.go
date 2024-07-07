@@ -2,77 +2,111 @@ package main
 
 import (
 	"bufio"
-	"os"
-	"strings"
-
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/tiggoins/function-checker/config"
+	"github.com/tiggoins/function-checker/resource"
 	apiresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
-
-	"k8s_function_checker/checker"
-	"k8s_function_checker/resource"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 )
 
 func main() {
-	app := kingpin.New("k8s-function-checker", "create configmap/statefulset/service/ingress to test if k8s function works fine.")
+	app := kingpin.New("k8s-function-checker", "create configmap/statefulset/service/ingress "+
+		"to test if k8s works fine.").Version("v1.0.0-alpha0")
 
-	config := checker.ArgConfig{}
-	app.Flag("namespace", "Namespace to test kubernetes function.").Default("default").Short('n').StringVar(&config.Namespace)
-	app.Flag("storageclass", "Storagclass to request storagce").Short('s').Required().StringVar(&config.Storageclass)
-	app.Flag("capacity", "Capacity to create persistencevolume").Short('c').Default("50Gi").StringVar(&config.Capacity)
-	app.Flag("host", "Host to use in ingress").Default("nginx-test.js.sgcc.com.cn").Short('h').StringVar(&config.Domain)
+	cfg := config.CommandArg{}
+	app.Flag("namespace", "Namespace to test kubernetes function.").Default("default").
+		Short('n').StringVar(&cfg.Namespace)
+	app.Flag("ingress-namespace", "Namespace which ingress-nginx located").
+		Short('i').Required().StringVar(&cfg.IngressNamespace)
+	app.Flag("storageclass", "Storagclass to request storagce").Short('s').
+		StringVar(&cfg.Storageclass)
+	app.Flag("capacity", "Capacity to create persistencevolume").Short('c').
+		Default("50Gi").StringVar(&cfg.Capacity)
+	app.Flag("host", "Host to use in ingress").Default("nginx-test.js.sgcc.com.cn").
+		Short('h').StringVar(&cfg.Domain)
 
-	kingpin.Version("v1.0.0-alpha0")
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	checker, err := checker.NewChecker(config)
+	checker := config.NewChecker(cfg)
 	defer checker.Cancel()
-	if err != nil {
-		klog.Fatalln("Error occour in NewChecker()", err)
-	}
 
 	checker.VerifyFlags()
 
-	ingclass, err1 := checker.GetDefaultIngressClass()
-	ingAnnotate, err2 := checker.GetIngressAnnotationValue(config.Namespace)
-
-	rs := new(resource.ResourceOpetors)
-	sts := resource.NewStatefulSet(config.Namespace, config.Storageclass, apiresource.MustParse(config.Capacity))
-	rs.Add(resource.NewConfigMap(config.Namespace), resource.NewService(config.Namespace), sts)
-	if err1 != nil && err2 != nil {
-		klog.Warningf("Error: [%s],will not create ingress.")
-	} else {
-		rs.Add(resource.NewIngress(config.Namespace, ingclass, ingAnnotate, config.Domain))
+	ingClass := checker.GetDefaultIngressClass()
+	ingAnnotate := checker.GetIngressAnnotationValue()
+	if cfg.Storageclass == "" {
+		cfg.Storageclass = checker.GetDefaultStorageClass()
 	}
+
+	rs := new(resource.Operators)
+	sts := resource.NewStatefulSet(cfg.Namespace, cfg.Storageclass, apiresource.MustParse(cfg.Capacity))
+	rs.Add(resource.NewConfigMap(cfg.Namespace), resource.NewService(cfg.Namespace), sts)
+	if ingClass == "" && ingAnnotate == "" {
+		klog.Warningf("Cannot find either default ingressclass or --ingress-class flag," +
+			"will not create ingress resource.")
+	} else {
+		rs.Add(resource.NewIngress(cfg.Namespace, ingClass, ingAnnotate, cfg.Domain))
+	}
+
+	cleanFunc := func() {
+		if err := rs.Delete(checker.Client); err != nil {
+			klog.Warningf("Error happened when delete resource: %s", err.Error())
+		}
+	}
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-sigCh:
+			cleanFunc()
+			os.Exit(1)
+		}
+	}()
+	defer func() {
+		cleanFunc()
+	}()
 
 	klog.Infoln("Start to verify k8s function.")
 
-	err = rs.Create(checker.Client)
+	var allErrors []error
+	err := rs.Create(checker.Client)
 	if err != nil {
 		klog.Warningf(err.Error())
+		allErrors = append(allErrors, err)
 	}
 
 	sts.WaitForReady(checker.Client)
-	klog.Infoln("Start to test the function of service")
+	klog.Infoln("Start to test the function of service from internal")
 
 	if sts.AccessFromInternal(checker.Client, checker.RestConf) {
-		klog.Infoln("test service from internal successful")
+		klog.Infoln("Access service from internal successfully")
 	} else {
-		klog.Infoln("test service from internal failed")
+		klog.Warningln("Access service from internal failed")
+		allErrors = append(allErrors, err)
 	}
 
-	klog.Infof("Waiting for user to access from browser,%s", config.Domain)
-	prompt()
+	klog.Infof("Waiting for user to access from browser,ingress domain is [%s]."+
+		"Press 'y' if the test was successfully, 'n' if it was not.", cfg.Domain)
+	if WaitForUser() {
+		klog.Infof("Ingress access test successfully")
+	} else {
+		klog.Infof("Ingress access test failed")
+		allErrors = append(allErrors, err)
+	}
 
-	err = sts.Delete(checker.Client)
-	if err != nil {
-		klog.Warningf(err.Error())
+	if len(allErrors) > 0 {
+		klog.Infoln("Function test with %d errors", len(allErrors))
+	} else {
+		klog.Infoln("All function test successfully")
 	}
 }
 
-func prompt() bool {
-	klog.Infoln("-> Press 'y' if the test was successful, 'n' if it was not:")
-
+func WaitForUser() bool {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		input := scanner.Text()
@@ -81,7 +115,7 @@ func prompt() bool {
 		} else if strings.EqualFold(input, "n") {
 			return false
 		} else {
-			klog.Infoln("Invalid input. Please press 'y' if the test was successful, 'n' if it was not:")
+			klog.Info("Invalid input. Please press 'y' if the test was successful, 'n' if it was not:")
 		}
 	}
 
@@ -90,7 +124,5 @@ func prompt() bool {
 		return false
 	}
 
-	// This return is redundant, the function will always return within the loop.
-	// However, it's good practice to have it in case the loop is somehow bypassed.
 	return false
 }

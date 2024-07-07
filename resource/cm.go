@@ -5,40 +5,43 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
 
 var (
-	page     = `it works!`
+	page   = "it works!"
+	script = `#!/bin/bash
+      times=$1
+      service=$2
+      for i in $(seq $times);
+      do curl -fsSL "$service";
+      done`
 	cmLabels = map[string]string{
-		"type":      "configmap",
+		"kind":      "configmap",
 		"component": "k8s-function-checker",
 	}
 )
 
-var _ ResourceOperator = &ConfigMap{}
+var _ OperatorInterface = &ConfigMap{}
 
 type ConfigMap struct {
-	cm *corev1.ConfigMap
+	cm      *corev1.ConfigMap
+	created bool
 }
 
 func NewConfigMap(namespace string) *ConfigMap {
 	config := new(ConfigMap)
 	config.cm = &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.String(),
-			Kind:       "ConfigMap",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "k8s-function-checker-cm",
 			Namespace: namespace,
 			Labels:    cmLabels,
 		},
 		Data: map[string]string{
-			"index.html": page,
+			"index.html":         page,
+			"service-checker.sh": script,
 		},
 	}
 
@@ -46,17 +49,22 @@ func NewConfigMap(namespace string) *ConfigMap {
 }
 
 func (c *ConfigMap) FormatedName() string {
-	return strings.Join([]string{c.cm.Kind, c.cm.Namespace, c.cm.Name}, "/")
+	return strings.Join([]string{c.cm.Namespace, "configmaps", c.cm.Name}, "/")
 }
 
 func (c *ConfigMap) Create(client *kubernetes.Clientset) error {
-	co, err := client.CoreV1().ConfigMaps(c.cm.Namespace).Create(context.Background(), c.cm, metav1.CreateOptions{})
+	_, err := client.CoreV1().ConfigMaps(c.cm.Namespace).Create(context.Background(), c.cm, metav1.CreateOptions{})
 	if err != nil {
 		klog.Infoln(err.Error())
+		return err
 	}
-	klog.Infof("configmap %s/%s create successfully", co.Namespace, co.Name)
+	c.created = true
 
 	return nil
+}
+
+func (c *ConfigMap) IsCreated() bool {
+	return c.created
 }
 
 func (c *ConfigMap) Delete(client *kubernetes.Clientset) error {
@@ -64,20 +72,7 @@ func (c *ConfigMap) Delete(client *kubernetes.Clientset) error {
 	if err != nil {
 		klog.Infoln(err.Error())
 		return err
-	} else {
-		klog.Infof("configmap %s/%s create successfully", c.cm.Namespace, c.cm.Name)
 	}
 
 	return nil
-}
-
-func (c *ConfigMap) IsExist(client *kubernetes.Clientset) bool {
-	_, err := client.CoreV1().ConfigMaps(c.cm.Namespace).Get(context.Background(), c.cm.Name, metav1.GetOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return true
-		}
-	}
-
-	return false
 }

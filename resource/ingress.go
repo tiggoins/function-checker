@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	networkingv1 "k8s.io/api/networking/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -17,25 +16,22 @@ const (
 
 var (
 	ingressLabels = map[string]string{
-		"type":      "ingress",
+		"kind":      "ingress",
 		"component": "k8s-function-checker",
 	}
 	pathType = networkingv1.PathTypePrefix
 )
 
-var _ ResourceOperator = &Ingress{}
+var _ OperatorInterface = &Ingress{}
 
 type Ingress struct {
-	ing *networkingv1.Ingress
+	ing     *networkingv1.Ingress
+	created bool
 }
 
 func NewIngress(namespace, class, annotationValue, domain string) *Ingress {
 	i := new(Ingress)
 	i.ing = &networkingv1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: networkingv1.SchemeGroupVersion.String(),
-			Kind:       "Ingress",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "k8s-function-checker-ingress",
 			Namespace: namespace,
@@ -75,17 +71,22 @@ func NewIngress(namespace, class, annotationValue, domain string) *Ingress {
 }
 
 func (i *Ingress) FormatedName() string {
-	return strings.Join([]string{i.ing.Kind, i.ing.Namespace, i.ing.Name}, "/")
+	return strings.Join([]string{i.ing.Namespace, "ingresses", i.ing.Name}, "/")
 }
 
 func (i *Ingress) Create(client *kubernetes.Clientset) error {
-	co, err := client.NetworkingV1().Ingresses(i.ing.Namespace).Create(context.Background(), i.ing, metav1.CreateOptions{})
+	_, err := client.NetworkingV1().Ingresses(i.ing.Namespace).Create(context.Background(), i.ing, metav1.CreateOptions{})
 	if err != nil {
 		klog.Infoln(err.Error())
+		return err
 	}
-	klog.Infof("configmap %s/%s create successfully", co.Namespace, co.Name)
+	i.created = true
 
 	return nil
+}
+
+func (i *Ingress) IsCreated() bool {
+	return i.created
 }
 
 func (i *Ingress) Delete(client *kubernetes.Clientset) error {
@@ -93,20 +94,7 @@ func (i *Ingress) Delete(client *kubernetes.Clientset) error {
 	if err != nil {
 		klog.Infoln(err.Error())
 		return err
-	} else {
-		klog.Infof("configmap %s/%s create successfully", i.ing.Namespace, i.ing.Name)
 	}
 
 	return nil
-}
-
-func (i *Ingress) IsExist(client *kubernetes.Clientset) bool {
-	_, err := client.NetworkingV1().Ingresses(i.ing.Namespace).Get(context.Background(), i.ing.Name, metav1.GetOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return true
-		}
-	}
-
-	return false
 }

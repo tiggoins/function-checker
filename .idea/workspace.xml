@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="c138a34b-0682-4e55-8212-932e4a15a5d2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/checker/checker.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kind-cluster.yml" beforeDir="false" afterPath="$PROJECT_DIR$/kind-cluster.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resource/cm.go" beforeDir="false" afterPath="$PROJECT_DIR$/resource/cm.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resource/ingress.go" beforeDir="false" afterPath="$PROJECT_DIR$/resource/ingress.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resource/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/resource/interface.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resource/sts.go" beforeDir="false" afterPath="$PROJECT_DIR$/resource/sts.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resource/svc.go" beforeDir="false" afterPath="$PROJECT_DIR$/resource/svc.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../../pkg/mod/k8s.io/client-go@v0.20.11/tools/remotecommand/errorstream.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../../pkg/mod/k8s.io/client-go@v0.20.11/tools/remotecommand/remotecommand.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../../pkg/mod/k8s.io/client-go@v0.20.11/tools/remotecommand/v2.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../../pkg/mod/k8s.io/client-go@v0.20.11/tools/remotecommand/v3.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../../pkg/mod/k8s.io/client-go@v0.20.11/tools/remotecommand/v4.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/deploy.yaml" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="2ipN1cvDBHlqpQ6VzFSM8ZcWoGU" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/ltzhang/code/Go/src/function-checker",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-33c477a475b1-e0158606a674-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-241.18034.61" />
+        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-GO-241.18034.61" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>

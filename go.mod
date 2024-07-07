@@ -1,4 +1,4 @@
-module k8s_function_checker
+module github.com/tiggoins/function-checker
 
 go 1.21.7
 

@@ -2,50 +2,53 @@ package resource
 
 import (
 	"fmt"
+	"k8s.io/klog/v2"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
 )
 
-type ResourceOperator interface {
+type OperatorInterface interface {
 	FormatedName() string
 	Create(client *kubernetes.Clientset) error
+	IsCreated() bool
 	Delete(client *kubernetes.Clientset) error
-	IsExist(client *kubernetes.Clientset) bool
 }
 
-type ResourceOpetors struct {
-	ros []ResourceOperator
+type Operators struct {
+	ops []OperatorInterface
 }
 
-func (ros *ResourceOpetors) Add(r ...ResourceOperator) {
-	ros.ros = append(ros.ros, r...)
+func (ops *Operators) Add(r ...OperatorInterface) {
+	ops.ops = append(ops.ops, r...)
 }
 
-func (ros *ResourceOpetors) Create(client *kubernetes.Clientset) error {
-	allErrs := []error{}
-	for _, r := range ros.ros {
+func (ops *Operators) Create(client *kubernetes.Clientset) error {
+	var allErrs []error
+	for _, r := range ops.ops {
 		err := r.Create(client)
 		if err != nil {
 			allErrs = append(allErrs, fmt.Errorf("error creating resource: %v ", err))
 			continue
 		}
-		klog.Infof("%s create successfully", r.FormatedName())
+		klog.Infof("Resource [%s] create successfully", r.FormatedName())
 	}
 	return utilerrors.NewAggregate(allErrs)
-
 }
 
-func (ros *ResourceOpetors) Delete(client *kubernetes.Clientset) error {
-	allErrs := []error{}
-	for _, r := range ros.ros {
-		err := r.Delete(client)
-		if err != nil {
-			allErrs = append(allErrs, fmt.Errorf("error creating resource: %v ", err))
-			continue
+func (ops *Operators) Delete(client *kubernetes.Clientset) error {
+	var allErrs []error
+	for _, r := range ops.ops {
+		{
+			if r.IsCreated() {
+				err := r.Delete(client)
+				if err != nil {
+					allErrs = append(allErrs, fmt.Errorf("error creating resource: %v ", err))
+					continue
+				}
+				klog.Infof("Resource [%s] delete successfully", r.FormatedName())
+			}
 		}
-		klog.Infof("%s delete successfully", r.FormatedName())
 	}
 
 	return utilerrors.NewAggregate(allErrs)
