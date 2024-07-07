@@ -35,7 +35,8 @@ func main() {
 	defer checker.Cancel()
 
 	checker.VerifyFlags()
-
+	
+        klog.Infoln("Start to verify k8s function.")
 	ingClass := checker.GetDefaultIngressClass()
 	ingAnnotate := checker.GetIngressAnnotationValue()
 	if cfg.Storageclass == "" {
@@ -70,8 +71,6 @@ func main() {
 	defer func() {
 		cleanFunc()
 	}()
-
-	klog.Infoln("Start to verify k8s function.")
 
 	var allErrors []error
 	err := rs.Create(checker.Client)
